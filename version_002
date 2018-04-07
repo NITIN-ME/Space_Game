@@ -112,6 +112,7 @@ function update() {
     {
         sprite.body.angularVelocity = 300;
     }
+    
     else
     {
         sprite.body.angularVelocity = 0;
