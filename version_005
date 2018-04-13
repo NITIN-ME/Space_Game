@@ -1,0 +1,397 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+    <title>My Game</title>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/2.6.2/phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body background-color = "#6666ff">
+
+<script type="text/javascript">
+
+
+var game = new Phaser.Game(1090, 525, Phaser.CANVAS, 'phaser-example', { preload: preload, create: create, update: update, render: render });
+
+function preload() {
+
+	game.load.image('neb', 'nebu.jpg');
+    game.load.image('ship', 'thrust_ship5.png');
+    game.load.spritesheet('bullet', 'rgblaser.png', 4, 4);
+    game.load.image('asteroid', 'asteroid1.png');
+    game.load.image('asteroid1', 'asteroid1.png');
+    game.load.image('asteroid2', 'asteroid1.png');
+    game.load.image('asteroid3', 'asteroid1.png');
+	game.load.audio('boden', 'war1.mp3');
+	game.load.audio('fire', 'fire1.wav');
+	game.load.audio('bomb', 'bomb.mp3');
+	game.load.spritesheet('kaboom', 'explode.png', 128, 128);
+
+}
+
+var sprite;
+var weapon;
+var cursors;
+var fireButton;
+var fx;
+var asteroid;
+var asteroid1;
+var asteroid2;
+var asteroid3;
+var bomb;
+var explosions;
+
+
+var a1 = 0;
+var a2 = 0;
+var a3 = 0;
+var a4 = 0;
+
+function create() {
+	game.physics.startSystem(Phaser.Physics.ARCADE);
+	back = game.add.image(-400, -400, 'neb');
+    //  Creates 30 bullets, using the 'bullet' graphic
+    weapon = game.add.weapon(40, 'bullet');
+	asteroid = game.add.image(800,200,'asteroid');
+	asteroid1 = game.add.image(800,350,'asteroid1');
+	asteroid2 = game.add.image(600,400,'asteroid1');
+	asteroid3 = game.add.image(800,200,'asteroid1');
+	music = game.add.audio('boden');
+	bomb = game.add.audio('bomb');
+	music.loop = true;
+	fx = game.add.audio('fire',0.1);
+	bomb.allowMultiple = false;
+	
+	
+	
+	//game.physics.enable(asteroid, Phaser.Physics.ARCADE);
+	//game.physics.enable(weapon, Phaser.Physics.ARCADE);
+	
+	
+    back.smoothed = false;
+	
+	
+	//music = new Phaser.Sound(game,'boden',1,true);
+
+	music.play();
+	//fx.volume = 0.1
+	//music.play();
+
+    //  The 'rgblaser.png' is a Sprite Sheet with 80 frames in it (each 4x4 px in size)
+    //  The 3rd argument tells the Weapon Plugin to advance to the next frame each time
+    //  a bullet is fired, when it hits 80 it'll wrap to zero again.
+    //  You can also set this via this.weapon.bulletFrameCycle = true
+    weapon.setBulletFrames(0, 80, true);
+
+    weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+
+    //  The speed at which the bullet is fired
+    weapon.bulletSpeed = 500;
+
+    //  Speed-up the rate of fire, allowing them to shoot 1 bullet every 50ms
+    weapon.fireRate = 350;
+
+    //  Wrap bullets around the world bounds to the opposite side
+    // weapon.bulletWorldWrap = true;
+
+    sprite = this.add.sprite(400, 300, 'ship');
+	game.physics.enable(sprite, Phaser.Physics.ARCADE);
+	//game.physics.enable(asteroid, Phaser.Physics.ARCADE);
+	game.physics.arcade.enable(asteroid);
+	game.physics.arcade.enable(asteroid1);
+	game.physics.arcade.enable(asteroid2);
+	game.physics.arcade.enable(asteroid3);
+    sprite.anchor.set(0.5);
+	//weapon.enableBody = true;
+	asteroid.enableBody = true;
+	asteroid1.enableBody = true;
+	asteroid2.enableBody = true;
+	asteroid3.enableBody = true;
+
+    sprite.body.drag.set(70);
+    sprite.body.maxVelocity.set(200);
+	
+
+    //  Tell the Weapon to track the 'player' Sprite
+    //  With no offsets from the position
+    //  But the 'true' argument tells the weapon to track sprite rotation
+    weapon.trackSprite(sprite, 0, 0, true);
+
+    cursors = this.input.keyboard.createCursorKeys();
+
+    fireButton = this.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
+	
+	/*
+	explosions = game.add.group();
+    explosions.createMultiple(1, 'kaboom');
+    explosions.forEach(asteroid, this);
+*/
+
+	weapon.outOfBoundsKill = false;
+	weapon.outOfCameraBoundsKill = false;
+}
+
+function update() {
+
+
+	//var len = weapon.children.length;
+	//console.log(len);
+	/*for (var i = 0; i < len; i++) {
+		console.log(weapon.children[i]);
+	}*/
+	
+	asteroid.x -= 2;
+	
+	if (asteroid.x < -asteroid.width)
+    {
+        asteroid.x = game.world.width;
+    }
+	
+	asteroid1.x -= 3;
+	
+	if (asteroid1.x < -asteroid1.width)
+    {
+        asteroid1.x = game.world.width;
+    }
+	
+	asteroid2.y -= 2;
+	
+	if (asteroid2.y < -asteroid2.height)
+    {
+        asteroid2.y = game.world.height;
+    }
+	
+	asteroid3.y -= 2;
+	
+	if (asteroid3.y < -asteroid3.height)
+    {
+        asteroid3.y = game.world.height;
+    }
+	
+	weapon.bullets.forEach(function(bullet){
+			//console.log(bullet);
+			if(bullet.centerX != 0){
+				//console.log(bullet.centerX + "   =>  "+bullet.centerY);
+				
+			if(doit(asteroid,bullet.centerX,bullet.centerY)){
+				var xx = bullet.centerX;
+				var yy = bullet.centerY;
+				asteroid.kill();
+				bullet.kill();
+				game.time.events.add(Phaser.Timer.SECOND * 3, birth, this);
+				if(a1 == 0) {
+					bomb.play();
+					/*var explosion = explosions.getFirstExists(false);
+					explosion.reset(xx, yy);
+					explosion.play('kaboom', 1, false, true);*/
+				}
+				a1 = 1;
+			}
+			
+			if(doit(asteroid1,bullet.centerX,bullet.centerY)){
+				var xx1 = bullet.centerX;
+				var yy1 = bullet.centerY;
+				asteroid1.kill();
+				bullet.kill();
+				game.time.events.add(Phaser.Timer.SECOND * 3, birth1, this);
+				if(a2 == 0) {
+					bomb.play();
+					/*var explosion = explosions.getFirstExists(false);
+					explosion.reset(xx, yy);
+					explosion.play('kaboom', 1, false, true);*/
+				}
+				a2 = 1;
+			}
+			
+			
+			if(doit(asteroid2,bullet.centerX,bullet.centerY)){
+				var xx1 = bullet.centerX;
+				var yy1 = bullet.centerY;
+				asteroid2.kill();
+				bullet.kill();
+				game.time.events.add(Phaser.Timer.SECOND * 3, birth2, this);
+				if(a3 == 0) {
+					bomb.play();
+					/*var explosion = explosions.getFirstExists(false);
+					explosion.reset(xx, yy);
+					explosion.play('kaboom', 1, false, true);*/
+				}
+				a3 = 1;
+			}
+			
+			if(doit(asteroid3,bullet.centerX,bullet.centerY)){
+				var xx1 = bullet.centerX;
+				var yy1 = bullet.centerY;
+				asteroid3.kill();
+				bullet.kill();
+				game.time.events.add(Phaser.Timer.SECOND * 3, birth3, this);
+				if(a4 == 0) {
+					bomb.play();
+					/*var explosion = explosions.getFirstExists(false);
+					explosion.reset(xx, yy);
+					explosion.play('kaboom', 1, false, true);*/
+				}
+				a4 = 1;
+			}
+			
+			
+			}
+			
+		}
+	);
+
+	
+	game.physics.arcade.collide(asteroid,weapon, collision_handler, null, this);
+
+		
+	if (checkOverlap(asteroid, sprite))
+    {
+        console.log("Hi, overlap occured!");
+		//asteroid.kill();
+		//bomb.play();
+    }
+	
+	if (checkOverlap(asteroid1, sprite))
+    {
+        console.log("Hi, overlap occured!");
+		//asteroid.kill();
+		//bomb.play();
+    }
+	
+	
+	if (checkOverlap1(asteroid, weapon))
+    {
+        console.log("Hi, overlap occured in iffffffffffffffff!");
+		asteroid.kill();
+		//weapon.kill();
+    }
+	
+
+	//game.physics.arcade.collide(weapon, asteroid);
+	//game.physics.arcade.overlap(weapon, asteroid, collisionHandler, null, this);
+	
+	
+    game.physics.arcade.overlap(sprite, asteroid, hitEnemy, null, this);
+	
+    if (cursors.up.isDown)
+    {
+        game.physics.arcade.accelerationFromRotation(sprite.rotation, 300, sprite.body.acceleration);
+    }
+	else if (cursors.down.isDown)
+    {
+        game.physics.arcade.accelerationFromRotation(sprite.rotation, -300, sprite.body.acceleration);
+    }
+    else
+    {
+        sprite.body.acceleration.set(0);
+    }
+
+    if (cursors.left.isDown)
+    {
+        sprite.body.angularVelocity = -300;
+    }
+    else if (cursors.right.isDown)
+    {
+        sprite.body.angularVelocity = 300;
+    }
+    else
+    {
+        sprite.body.angularVelocity = 0;
+    }
+
+    if (fireButton.isDown)
+    {
+        weapon.fire();
+		fx.play();
+    }
+
+    game.world.wrap(sprite, 16);
+	
+	
+
+}
+
+function render() {
+
+   // weapon.debug();
+
+}
+
+function hitEnemy (one, two) {
+        one.kill();
+		two.kill();
+        console.log("Hit");
+ }
+
+ function checkOverlap(spriteA, spriteB) {
+
+    var boundsA = spriteA.getBounds();
+    var boundsB = spriteB.getBounds();
+
+    return Phaser.Rectangle.intersects(boundsA, boundsB);
+	
+		 //bomb.play();
+
+}
+
+
+ function checkOverlap1(spriteA, spriteB) {
+	
+   /* var boundsA = spriteA.bounds();
+	var xcor = spriteB.centerX;
+	var ycor = spriteB.centerY;
+	//console.log(xcor + "" + ycor);
+    //console.log("Inside Collision 1");*/
+	
+    //console.log(Phaser.Rectangle.contains(spriteB,xcor, ycor));
+    //return Phaser.Rectangle.contains(boundsA, xcor, ycor);
+
+}
+
+function collision_handler (object1, object2) {
+         //object1.kill();
+         object2.kill();
+		 //bomb.play();
+}
+
+
+function doit(asteroid,x,y){
+	//console.log("Inside the function!");
+	var boundsA = asteroid.getBounds();
+	console.log(x+ " -> "+y);
+    return Phaser.Rectangle.contains(boundsA, x, y);
+}
+
+
+function birth(){
+	asteroid.revive();
+	a1 = 0;
+}
+
+
+function birth1(){
+	asteroid1.revive();
+	a2 = 0;
+}
+
+
+function birth2(){
+	asteroid2.revive();
+	a3 = 0;
+}
+
+
+function birth3(){
+	asteroid3.revive();
+	a4 = 0;
+}
+
+
+</script>
+
+</body>
+</html>
